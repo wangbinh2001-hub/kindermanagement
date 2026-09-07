@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { prisma } from '@km/db';
 import { appRouter } from '../../src/server/root';
-import { TRPCError } from '@trpc/server';
 import { maskPhone, maskEmail, maskIdNumber, maskAuditLogEntry } from '@km/validators';
 
 const PREFIX = `KM_SEC_REV_${Date.now()}`;
@@ -12,7 +11,6 @@ describe('Phase 12: Security & Tenancy Comprehensive Review (P12.2)', () => {
   let adminAUserId: string;
   let adminBUserId: string;
   let teacherAUserId: string;
-  let sysAdminUserId: string;
 
   let schoolYearAId: string;
   let classAId: string;
@@ -69,7 +67,6 @@ describe('Phase 12: Security & Tenancy Comprehensive Review (P12.2)', () => {
     adminAUserId = `admin_a_${Date.now()}`;
     adminBUserId = `admin_b_${Date.now()}`;
     teacherAUserId = `teacher_a_${Date.now()}`;
-    sysAdminUserId = `sysadmin_${Date.now()}`;
 
     await prisma.schoolAdmin.create({
       data: { schoolId: schoolAId, userId: adminAUserId },
@@ -183,10 +180,14 @@ describe('Phase 12: Security & Tenancy Comprehensive Review (P12.2)', () => {
     }
   });
 
-  const callerFor = (userId: string, role: string, activeSchoolId?: string) =>
+  const callerFor = (
+    userId: string,
+    role: 'SYSTEM_ADMIN' | 'SCHOOL_ADMIN' | 'TEACHER' | 'STAFF' | 'PARENT',
+    activeSchoolId?: string,
+  ) =>
     appRouter.createCaller({
       prisma,
-      user: { id: userId, role: role as any, activeSchoolId: activeSchoolId ?? null },
+      user: { id: userId, role, activeSchoolId: activeSchoolId ?? null },
     });
 
   it('1. Tenancy Boundary: School Admin B cannot access School A students', async () => {

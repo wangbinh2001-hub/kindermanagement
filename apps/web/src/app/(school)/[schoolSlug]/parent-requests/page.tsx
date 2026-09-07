@@ -34,7 +34,7 @@ interface SchoolRequestItem {
   reviewedAt?: string;
   reviewedByRole?: string;
   reviewNotes?: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 const mockSchoolRequests: SchoolRequestItem[] = [

@@ -77,7 +77,16 @@ export default async function ClassAttendancePage({
       recordedByName: curr.recordedBy?.fullName || 'Hệ thống',
     };
     return acc;
-  }, {} as Record<string, any>);
+  }, {} as Record<string, {
+    id: string;
+    status: string;
+    checkInTime: string | null;
+    checkOutTime: string | null;
+    overtimeHours: number;
+    method: string;
+    notes: string;
+    recordedByName: string;
+  }>);
 
   // Dữ liệu học sinh để truyền xuống client
   const students = classData.memberships.map((mem) => ({

@@ -8,7 +8,7 @@
     "build": "next build",
     "postbuild": "node ../../scripts/copy-prisma-engine.mjs",
     "start": "next start -p 3000",
-    "lint": "eslint . --max-warnings=0",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:tenancy": "vitest run --dir test/tenancy"

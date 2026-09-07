@@ -7,7 +7,7 @@ const testSchoolName = `Trường Mầm Non Họa Mi Phase 6 ${testId}`;
 let createdSchoolId = '';
 let createdYearId = '';
 let classId = '';
-let studentRels: any[] = [];
+let studentRels: Array<{ id: string }> = [];
 
 test.describe.serial('Phase 6: Attendance (Điểm danh & Đón trả)', () => {
   test.beforeAll(async () => {
