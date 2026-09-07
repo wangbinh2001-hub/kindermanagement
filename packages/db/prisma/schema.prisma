@@ -1,0 +1,857 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ============================================================
+// PHASE 1 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Tenancy primitives
+// ============================================================
+
+model School {
+  id        String       @id @default(cuid())
+  code      String       @unique
+  slug      String       @unique
+  name      String
+  status    SchoolStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  deletedAt DateTime?
+
+  // Contact Info
+  ownerName           String?
+  logoUrl             String?
+  phone               String?
+  email               String?
+  address             String?
+  taxCode             String?
+  legalRepresentative String?
+  description         String?
+
+  supportRequests   SupportRequest[]
+  adminAccounts     SchoolAdmin[]
+  auditLogs         AuditLog[]
+  supportSessions   SupportSession[]
+  setting           SchoolSetting?
+  schoolYears       SchoolYear[]
+  classes           Class[]
+  enrollments       StudentSchoolRelationship[]
+  staffMembers      StaffMember[]
+  feeItems          FeeItem[]
+  invoices          Invoice[]
+  HealthRecord      HealthRecord[]
+  parentRequests    ParentRequest[]
+  menus             Menu[]
+  ingredients       Ingredient[]
+  foodItems         FoodItem[]
+  grocerySheets     GrocerySheet[]
+  attendanceRecords AttendanceRecord[]
+  notifications     Notification[]
+
+  @@index([status])
+}
+
+enum SchoolStatus {
+  PENDING_SETUP
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+model AuditLog {
+  id         String    @id @default(cuid())
+  schoolId   String
+  userId     String
+  userRole   String
+  entityType String
+  entityId   String
+  action     String
+  beforeJson Json?
+  afterJson  Json?
+  metadata   Json?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId, entityType, entityId])
+  @@index([userId, createdAt])
+}
+
+// --- Notifications (Phase 11) ---
+model Notification {
+  id          String    @id @default(cuid())
+  schoolId    String
+  recipientId String    // userId of the recipient
+  type        String    // PARENT_REQUEST_APPROVED, INVOICE_ISSUED, etc.
+  title       String
+  body        String?
+  linkUrl     String?   // deep link to entity
+  entityType  String?
+  entityId    String?
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@index([recipientId, isRead, createdAt])
+  @@index([schoolId, createdAt])
+}
+
+// ============================================================
+// PHASE 2 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â System Admin: School lifecycle + Support access
+// ============================================================
+
+model SchoolAdmin {
+  id             String    @id @default(cuid())
+  schoolId       String
+  userId         String    @unique
+  mustChangePass Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+}
+
+model SupportRequest {
+  id          String               @id @default(cuid())
+  schoolId    String
+  requestedBy String
+  title       String
+  description String
+  isEmergency Boolean              @default(false)
+  status      SupportRequestStatus @default(OPEN)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  deletedAt   DateTime?
+  closedAt    DateTime?
+  closedBy    String?
+
+  school   School           @relation(fields: [schoolId], references: [id])
+  sessions SupportSession[]
+
+  @@index([schoolId, status])
+}
+
+enum SupportRequestStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model SupportSession {
+  id          String               @id @default(cuid())
+  requestId   String
+  schoolId    String
+  adminId     String
+  reason      String
+  scope       String               @default("FULL_READ")
+  startedAt   DateTime             @default(now())
+  expiresAt   DateTime
+  endedAt     DateTime?
+  status      SupportSessionStatus @default(ACTIVE)
+  auditAction String               @default("SUPPORT_ACCESS_START")
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  deletedAt   DateTime?
+
+  request SupportRequest @relation(fields: [requestId], references: [id])
+  school  School         @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId, status])
+  @@index([adminId, expiresAt])
+}
+
+enum SupportSessionStatus {
+  ACTIVE
+  EXPIRED
+  CLOSED
+}
+
+model SchoolSetting {
+  id                  String    @id @default(cuid())
+  schoolId            String    @unique
+  currentSchoolYearId String?
+  enableAttendance    Boolean   @default(true)
+  enableTuition       Boolean   @default(true)
+  enableHealth        Boolean   @default(true)
+  enableNutrition     Boolean   @default(false)
+  notificationConfig  Json?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  school School @relation(fields: [schoolId], references: [id])
+}
+
+model SchemaVersion {
+  id        String   @id @default(cuid())
+  version   String   @unique
+  appliedAt DateTime @default(now())
+
+  @@map("_SchemaVersion")
+}
+
+// ============================================================
+// PHASE 3 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â School Years & Classes
+// ============================================================
+
+model SchoolYear {
+  id         String    @id @default(cuid())
+  schoolId   String
+  name       String
+  startDate  DateTime
+  endDate    DateTime
+  isCurrent  Boolean   @default(false)
+  isArchived Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  school            School                      @relation(fields: [schoolId], references: [id])
+  classes           Class[]
+  enrollments       StudentSchoolRelationship[]
+  memberships       ClassMembership[]
+  menus             Menu[]
+  attendanceRecords AttendanceRecord[]
+
+  @@index([schoolId, isCurrent])
+}
+
+model Class {
+  id                  String    @id @default(cuid())
+  schoolId            String
+  schoolYearId        String
+  name                String
+  ageGroup            AgeGroup
+  capacity            Int       @default(30)
+  homeroomTeacherId   String?
+  assistantTeacherIds String[]  @default([])
+  isActive            Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  school            School             @relation(fields: [schoolId], references: [id])
+  schoolYear        SchoolYear         @relation(fields: [schoolYearId], references: [id])
+  memberships       ClassMembership[]
+  HealthRecord      HealthRecord[]
+  attendanceRecords AttendanceRecord[]
+
+  @@index([schoolId, schoolYearId])
+}
+
+enum AgeGroup {
+  NURSERY_12_18M
+  NURSERY_18_24M
+  NURSERY_24_36M
+  PRESCHOOL_3_4Y
+  PRESCHOOL_4_5Y
+  PRESCHOOL_5_6Y
+}
+
+// ============================================================
+// PHASE 4 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Students, Families & Enrollment History
+// ============================================================
+
+// Global identity - TÃƒÆ’Ã‚Â¡ch biÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡t hoÃƒÆ’Ã‚Â n toÃƒÆ’Ã‚Â n vÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi school scope
+model Student {
+  id String @id @default(cuid())
+
+  // Personal Information
+  firstName   String
+  middleName  String?
+  lastName    String
+  gender      Gender
+  dateOfBirth DateTime
+
+  // Documentation (Global uniqueness)
+  cccd             String?
+  cccdIssuedAt     DateTime?
+  cccdIssuedBy     String?
+  personalIdNumber String?
+  passportNumber   String?
+  passportIssuedAt DateTime?
+  passportIssuedBy String?
+
+  // Contact / Addresses
+  permanentAddressProvince String?
+  permanentAddressDistrict String?
+  permanentAddressWard     String?
+  permanentAddressDetail   String?
+  currentAddressProvince   String?
+  currentAddressDistrict   String?
+  currentAddressWard       String?
+  currentAddressDetail     String?
+  phoneContact             String?
+
+  // Policy & Special Needs
+  disabilityType   String?
+  policyObject     String?
+  tuitionExempt    Boolean @default(false)
+  tuitionReduced   Boolean @default(false)
+  studyCostSupport Boolean @default(false)
+  lunchSupport     Boolean @default(false)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  enrollments StudentSchoolRelationship[]
+
+  @@index([lastName, firstName])
+  @@index([cccd])
+  @@index([personalIdNumber])
+  @@index([passportNumber])
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+// Tenant operational - Quan hÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡ vÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi tÃƒÂ¡Ã‚Â»Ã‚Â«ng trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Âng hÃƒÂ¡Ã‚Â»Ã‚Âc
+model StudentSchoolRelationship {
+  id               String           @id @default(cuid())
+  studentId        String
+  schoolId         String
+  schoolYearId     String
+  enrollmentStatus EnrollmentStatus @default(ACTIVE)
+  idempotencyKey   String?
+
+  enrolledAt       DateTime  @default(now())
+  withdrawnAt      DateTime?
+  withdrawalReason String?
+  previousProvince String?
+  previousWard     String?
+
+  // Class assignment history
+  initialClassId String?
+  currentClassId String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  student            Student             @relation(fields: [studentId], references: [id])
+  school             School              @relation(fields: [schoolId], references: [id])
+  schoolYear         SchoolYear          @relation(fields: [schoolYearId], references: [id])
+  responsiblePersons ResponsiblePerson[]
+  classMemberships   ClassMembership[]
+  studentReductions  StudentReduction[]
+  invoices           Invoice[]
+  parentIdentity     ParentIdentity?     @relation("LegacyPrimaryEnrollmentParent", fields: [parentIdentityId], references: [id])
+  parentIdentityId   String?
+  HealthRecord       HealthRecord[]
+  parentRequests     ParentRequest[]
+  attendanceRecords  AttendanceRecord[]
+
+  @@index([studentId, schoolId, schoolYearId])
+  @@index([schoolId, idempotencyKey])
+  @@index([schoolId, enrollmentStatus])
+  @@index([currentClassId])
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  WITHDRAWN
+  GRADUATED
+  ON_LEAVE
+}
+
+// Responsible Persons (Father, Mother, Guardian)
+model ResponsiblePerson {
+  id                          String                @id @default(cuid())
+  studentSchoolRelationshipId String
+  type                        ResponsiblePersonType
+
+  fullName         String?
+  yearOfBirth      Int?
+  occupation       String?
+  phone            String?
+  cccd             String?
+  parentIdentityId String?
+
+  noInfo Boolean @default(false)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  relationship   StudentSchoolRelationship @relation(fields: [studentSchoolRelationshipId], references: [id])
+  parentIdentity ParentIdentity?           @relation(fields: [parentIdentityId], references: [id])
+
+  @@index([studentSchoolRelationshipId])
+  @@index([parentIdentityId])
+}
+
+enum ResponsiblePersonType {
+  FATHER
+  MOTHER
+  GUARDIAN
+}
+
+// Global Parent Identity - DÃƒÆ’Ã‚Â¹ng phone lÃƒÆ’Ã‚Â m khÃƒÆ’Ã‚Â³a chÃƒÆ’Ã‚Â­nh
+model ParentIdentity {
+  id    String @id @default(cuid())
+  phone String @unique
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  studentSchoolRelationships StudentSchoolRelationship[] @relation("LegacyPrimaryEnrollmentParent")
+  responsiblePersons         ResponsiblePerson[]
+
+  @@index([phone])
+}
+
+// Append-only class history
+model ClassMembership {
+  id                          String    @id @default(cuid())
+  studentSchoolRelationshipId String
+  classId                     String
+  schoolYearId                String
+  startedAt                   DateTime
+  endedAt                     DateTime?
+  createdAt                   DateTime  @default(now())
+
+  relationship StudentSchoolRelationship @relation(fields: [studentSchoolRelationshipId], references: [id])
+  class        Class                     @relation(fields: [classId], references: [id])
+  schoolYear   SchoolYear                @relation(fields: [schoolYearId], references: [id])
+
+  @@index([classId])
+  @@index([studentSchoolRelationshipId])
+}
+
+// ============================================================
+// PHASE 5 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Staff & Teachers
+// ============================================================
+
+enum EmploymentStatus {
+  ACTIVE
+  ON_LEAVE
+  RESIGNED
+  TERMINATED
+}
+
+model StaffMember {
+  id               String           @id @default(cuid())
+  userId           String
+  schoolId         String
+  fullName         String?
+  phone            String?
+  email            String?
+  avatarUrl        String?
+  employeeCode     String?
+  roles            String[]         @default([])
+  permissions      String[]         @default([])
+  employmentStatus EmploymentStatus @default(ACTIVE)
+  hiredAt          DateTime
+  resignedAt       DateTime?
+  notes            String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  deletedAt        DateTime?
+
+  school                    School             @relation(fields: [schoolId], references: [id])
+  attendanceRecordsRecorded AttendanceRecord[]
+
+  @@unique([userId, schoolId])
+  @@index([schoolId, employmentStatus])
+}
+
+// Extend Class for Phase 5 assignments
+// assistantTeacherIds keeps the smallest viable multi-assignment surface.
+
+// ============================================================
+// PHASE 6 Ã¢â‚¬â€ Attendance
+// ============================================================
+
+model AttendanceRecord {
+  id                          String           @id @default(cuid())
+  schoolId                    String
+  schoolYearId                String
+  classId                     String
+  studentSchoolRelationshipId String
+  date                        DateTime
+  status                      AttendanceStatus @default(PRESENT)
+  method                      AttendanceMethod @default(MANUAL)
+  checkInTime                 DateTime?
+  checkOutTime                DateTime?
+  overtimeHours               Decimal          @default(0)
+  recordedById                String
+  notes                       String?
+  createdAt                   DateTime         @default(now())
+  updatedAt                   DateTime         @updatedAt
+  deletedAt                   DateTime?
+
+  school                    School                    @relation(fields: [schoolId], references: [id])
+  schoolYear                SchoolYear                @relation(fields: [schoolYearId], references: [id])
+  class                     Class                     @relation(fields: [classId], references: [id])
+  studentSchoolRelationship StudentSchoolRelationship @relation(fields: [studentSchoolRelationshipId], references: [id])
+  recordedBy                StaffMember               @relation(fields: [recordedById], references: [id])
+
+  @@unique([studentSchoolRelationshipId, date], name: "unique_student_date")
+  @@index([schoolId, classId, date])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT_EXCUSED
+  ABSENT_UNEXCUSED
+  LATE
+  EARLY_LEAVE
+}
+
+enum AttendanceMethod {
+  MANUAL
+  MATRIX
+  QR_CODE
+  PARENT_REQUEST
+}
+
+// ============================================================
+// PHASE 7 â€” Fees & Tuition
+// ============================================================
+
+enum BillingCycle {
+  MONTHLY
+  TERMLY
+  YEARLY
+  ONE_TIME
+}
+
+enum ReductionType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  PARTIALLY_PAID
+  CANCELLED
+}
+
+model FeeItem {
+  id           String       @id @default(cuid())
+  schoolId     String
+  name         String
+  amount       Decimal      @db.Decimal(12, 0)
+  billingCycle BillingCycle @default(MONTHLY)
+  isMandatory  Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  deletedAt    DateTime?
+
+  school   School        @relation(fields: [schoolId], references: [id])
+  invoices InvoiceItem[]
+
+  @@index([schoolId])
+}
+
+model StudentReduction {
+  id                          String        @id @default(cuid())
+  studentSchoolRelationshipId String
+  reductionType               ReductionType
+  value                       Decimal       @db.Decimal(12, 2)
+  appliedToFeeItemId          String?
+  note                        String?
+  createdAt                   DateTime      @default(now())
+  updatedAt                   DateTime      @updatedAt
+  deletedAt                   DateTime?
+
+  studentSchoolRelationship StudentSchoolRelationship @relation(fields: [studentSchoolRelationshipId], references: [id])
+
+  @@index([studentSchoolRelationshipId])
+}
+
+model Invoice {
+  id                          String        @id @default(cuid())
+  schoolId                    String
+  studentSchoolRelationshipId String
+  schoolYearId                String
+  periodMonth                 Int
+  periodYear                  Int
+  status                      InvoiceStatus @default(DRAFT)
+  grossAmount                 Decimal       @db.Decimal(12, 0)
+  discountAmount              Decimal       @default(0) @db.Decimal(12, 0)
+  overtimeAmount              Decimal       @default(0) @db.Decimal(12, 0)
+  refundAmount                Decimal       @default(0) @db.Decimal(12, 0)
+  carriedFromPrevious         Decimal       @default(0) @db.Decimal(12, 0)
+  totalAmount                 Decimal       @db.Decimal(12, 0)
+  paidAmount                  Decimal       @default(0) @db.Decimal(12, 0)
+  dueAmount                   Decimal       @db.Decimal(12, 0)
+  invoiceNumber               String?
+  issuedAt                    DateTime?
+  cancelledAt                 DateTime?
+  cancelReason                String?
+  createdAt                   DateTime      @default(now())
+  updatedAt                   DateTime      @updatedAt
+  deletedAt                   DateTime?
+
+  school                    School                    @relation(fields: [schoolId], references: [id])
+  studentSchoolRelationship StudentSchoolRelationship @relation(fields: [studentSchoolRelationshipId], references: [id])
+  items                     InvoiceItem[]
+
+  @@unique([studentSchoolRelationshipId, periodMonth, periodYear])
+  @@index([schoolId, status])
+}
+
+model InvoiceItem {
+  id        String    @id @default(cuid())
+  invoiceId String
+  feeItemId String?
+  name      String
+  amount    Decimal   @db.Decimal(12, 0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  invoice Invoice  @relation(fields: [invoiceId], references: [id])
+  feeItem FeeItem? @relation(fields: [feeItemId], references: [id])
+}
+
+// ============================================================
+// PHASE 8 — Health Records
+// ============================================================
+
+enum BmiCategory {
+  UNDERWEIGHT
+  NORMAL
+  OVERWEIGHT
+  OBESE
+}
+
+model HealthRecord {
+  id                          String  @id @default(cuid())
+  schoolId                    String
+  studentSchoolRelationshipId String
+  classId                     String?
+
+  heightCm     Decimal      @db.Decimal(5, 1)
+  weightKg     Decimal      @db.Decimal(5, 2)
+  bmi          Decimal      @db.Decimal(4, 1)
+  bmiCategory  BmiCategory?
+  whoReference String       @default("WHO 2006")
+
+  measuredAt DateTime
+  recordedBy String
+  notes      String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  school                    School                    @relation(fields: [schoolId], references: [id])
+  studentSchoolRelationship StudentSchoolRelationship @relation(fields: [studentSchoolRelationshipId], references: [id])
+  class                     Class?                    @relation(fields: [classId], references: [id])
+
+  @@index([studentSchoolRelationshipId])
+  @@index([schoolId, measuredAt])
+}
+
+// --- Parent Request (Phase 10/11) ---
+model ParentRequest {
+  id                          String              @id @default(cuid())
+  schoolId                    String
+  studentSchoolRelationshipId String
+  type                        ParentRequestType
+  title                       String
+  description                 String?
+  status                      ParentRequestStatus @default(PENDING)
+  metadata                    Json?
+  submittedBy                 String
+  reviewedById                String?
+  reviewedByRole              String?
+  reviewedAt                  DateTime?
+  reviewNotes                 String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  school                    School                    @relation(fields: [schoolId], references: [id])
+  studentSchoolRelationship StudentSchoolRelationship @relation(fields: [studentSchoolRelationshipId], references: [id])
+
+  @@index([schoolId, studentSchoolRelationshipId])
+  @@index([schoolId, status])
+}
+
+enum ParentRequestType {
+  MEDICATION_INSTRUCTION
+  LATE_PICKUP
+  PICKUP_AUTHORIZATION
+  ABSENCE_LEAVE
+  CHILD_CONDITION_NOTE
+  OTHER_REQUEST
+}
+
+enum ParentRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+// --- Nutrition Menu (Phase 9) ---
+model Menu {
+  id            String    @id @default(cuid())
+  schoolId      String
+  schoolYearId  String
+  weekStartDate DateTime
+  weekEndDate   DateTime
+  isPublished   Boolean   @default(false)
+  publishedAt   DateTime?
+  publishedById String?
+  notes         String?
+  items         Json
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  school     School     @relation(fields: [schoolId], references: [id])
+  schoolYear SchoolYear @relation(fields: [schoolYearId], references: [id])
+
+  @@index([schoolId, schoolYearId])
+  @@index([schoolId, isPublished])
+  @@index([schoolYearId])
+}
+
+// --- Nutrition Entities (Phase 9) ---
+
+enum MealSlot {
+  MORNING
+  LUNCH_MAIN
+  LUNCH_SOUP
+  AFTERNOON
+}
+
+enum FoodGroup {
+  MEAT
+  FISH
+  VEGETABLE
+  EGG
+  DAIRY
+  GRAIN
+  OTHER
+}
+
+enum GroceryStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
+model Ingredient {
+  id          String    @id @default(cuid())
+  schoolId    String
+  name        String
+  unit        String    // kg, quả, bó, hộp, lít...
+  unitPrice   Decimal   @db.Decimal(12, 0)
+  kcalPerUnit Decimal   @db.Decimal(8, 1)
+  foodGroup   FoodGroup @default(OTHER)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  school          School           @relation(fields: [schoolId], references: [id])
+  foodIngredients FoodIngredient[]
+  groceryItems    GroceryItem[]
+
+  @@index([schoolId, isActive])
+}
+
+model FoodItem {
+  id        String    @id @default(cuid())
+  schoolId  String
+  name      String
+  mealSlot  MealSlot
+  foodGroup FoodGroup @default(OTHER)
+  totalKcal Decimal   @db.Decimal(8, 1)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  school      School           @relation(fields: [schoolId], references: [id])
+  ingredients FoodIngredient[]
+
+  @@index([schoolId, mealSlot, isActive])
+}
+
+model FoodIngredient {
+  id               String  @id @default(cuid())
+  foodItemId       String
+  ingredientId     String
+  quantity         Decimal @db.Decimal(8, 2)
+  kcalContribution Decimal @db.Decimal(8, 1)
+
+  foodItem   FoodItem   @relation(fields: [foodItemId], references: [id], onDelete: Cascade)
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@index([foodItemId])
+  @@index([ingredientId])
+}
+
+model GrocerySheet {
+  id                 String        @id @default(cuid())
+  schoolId           String
+  month              Int
+  year               Int
+  studentCount       Int           @default(0)
+  mealRateMorning    Decimal       @default(0) @db.Decimal(12, 0)
+  mealRateLunch      Decimal       @default(0) @db.Decimal(12, 0)
+  mealRateAfternoon  Decimal       @default(0) @db.Decimal(12, 0)
+  gasCost            Decimal       @default(0) @db.Decimal(12, 0)
+  electricityCost    Decimal       @default(0) @db.Decimal(12, 0)
+  budget             Decimal       @default(0) @db.Decimal(12, 0)
+  totalPurchase      Decimal       @default(0) @db.Decimal(12, 0)
+  status             GroceryStatus @default(DRAFT)
+  rejectionReason    String?
+  notes              String?
+  createdById        String
+  approvedById       String?
+  approvedAt         DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  deletedAt          DateTime?
+
+  school School        @relation(fields: [schoolId], references: [id])
+  items  GroceryItem[]
+
+  @@index([schoolId, month, year])
+  @@index([schoolId, status])
+}
+
+model GroceryItem {
+  id             String  @id @default(cuid())
+  grocerySheetId String
+  ingredientId   String
+  quantity       Decimal @db.Decimal(8, 2)
+  unitPrice      Decimal @db.Decimal(12, 0)
+  totalPrice     Decimal @db.Decimal(12, 0)
+
+  grocerySheet GrocerySheet @relation(fields: [grocerySheetId], references: [id], onDelete: Cascade)
+  ingredient   Ingredient   @relation(fields: [ingredientId], references: [id])
+
+  @@index([grocerySheetId])
+  @@index([ingredientId])
+}
+

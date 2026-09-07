@@ -1,0 +1,45 @@
+{
+  "name": "kindermanagement",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@12.3.4",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:tenancy": "pnpm --filter @km/web run test:tenancy"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@typescript-eslint/eslint-plugin": "^8.40.0",
+    "@typescript-eslint/parser": "^8.40.0",
+    "eslint": "^9.13.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.0",
+    "prettier": "^3.9.6",
+    "turbo": "^2.3.3",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.69.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": "eslint --fix"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "dependencies": {
+    "@radix-ui/react-scroll-area": "^1.2.18",
+    "@radix-ui/react-separator": "^1.1.15",
+    "@radix-ui/react-slot": "^1.3.3",
+    "autoprefixer": "^10.5.5",
+    "clsx": "^2.1.1",
+    "next-intl": "^4.14.2",
+    "next-themes": "^0.4.6",
+    "postcss": "^8.5.28",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4.3.3"
+  }
+}

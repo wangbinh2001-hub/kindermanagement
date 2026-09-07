@@ -1,0 +1,28 @@
+# deps
+node_modules
+.pnpm-store
+
+# next
+.next
+.turbo
+dist
+build
+out
+
+# env
+.env
+.env.local
+.env.*.local
+
+# testing
+coverage
+.nyc_output
+
+# misc
+.DS_Store
+*.log
+*.tsbuildinfo
+.vscode
+.idea
+scratch/
+.claude/

@@ -1,0 +1,144 @@
+{
+  "students": {
+    "title": "Học sinh",
+    "description": "Quản lý hồ sơ, gia đình và lịch sử nhập học của từng trẻ.",
+    "searchLabel": "Tìm học sinh",
+    "searchPlaceholder": "Nhập họ tên",
+    "statusLabel": "Trạng thái",
+    "allStatuses": "Tất cả trạng thái",
+    "filter": "Lọc",
+    "reset": "Đặt lại",
+    "name": "Họ và tên",
+    "dateOfBirth": "Ngày sinh",
+    "schoolYear": "Năm học",
+    "class": "Lớp",
+    "status": "Trạng thái",
+    "actions": "Thao tác",
+    "viewProfile": "Xem hồ sơ",
+    "emptyTitle": "Chưa có hồ sơ học sinh",
+    "emptyDescription": "Không tìm thấy học sinh phù hợp với trường và bộ lọc hiện tại.",
+    "reload": "Tải lại danh sách",
+    "previousPage": "Trang trước",
+    "nextPage": "Trang sau",
+    "pageSummary": "Trang {page} / {pages} · {total} hồ sơ",
+    "profile": "Hồ sơ học sinh",
+    "personalInformation": "Thông tin cá nhân",
+    "family": "Gia đình và người chịu trách nhiệm",
+    "enrollmentHistory": "Lịch sử nhập học và phân lớp",
+    "gender": "Giới tính",
+    "citizenId": "CCCD / Định danh",
+    "contactPhone": "Số điện thoại liên hệ",
+    "relationship": "Quan hệ",
+    "yearOfBirth": "Năm sinh",
+    "enrolledAt": "Ngày nhập học",
+    "withdrawnAt": "Ngày thôi học",
+    "classPeriod": "Thời gian học lớp",
+    "backToList": "Quay lại danh sách học sinh",
+    "notAvailable": "Chưa có",
+    "loading": "Đang tải hồ sơ học sinh",
+    "errorTitle": "Không thể tải dữ liệu học sinh",
+    "errorDescription": "Đã có lỗi xảy ra. Vui lòng thử lại.",
+    "retry": "Thử lại",
+    "statuses": {
+      "ACTIVE": "Đang học",
+      "WITHDRAWN": "Đã thôi học",
+      "GRADUATED": "Đã tốt nghiệp",
+      "ON_LEAVE": "Tạm nghỉ"
+    },
+    "genders": {
+      "MALE": "Nam",
+      "FEMALE": "Nữ",
+      "OTHER": "Khác"
+    },
+    "relations": {
+      "FATHER": "Cha",
+      "MOTHER": "Mẹ",
+      "GUARDIAN": "Người giám hộ"
+    }
+  },
+  "health": {
+    "title": "Sức khỏe & Chỉ số phát triển",
+    "description": "Theo dõi định kỳ chiều cao, cân nặng, tự động tính BMI và chuẩn hóa dinh dưỡng theo tiêu chuẩn WHO.",
+    "recordMeasurement": "Ghi nhận chỉ số",
+    "historyAndGrowth": "Lịch sử & Tăng trưởng",
+    "growthChart": "Biểu đồ tăng trưởng",
+    "searchPlaceholder": "Tìm theo tên hoặc mã học sinh...",
+    "allClasses": "Tất cả các lớp",
+    "allBmiCategories": "Tất cả phân loại WHO",
+    "summary": {
+      "totalMeasurements": "Tổng lượt đo",
+      "normalCount": "Bình thường",
+      "underweightCount": "Suy dinh dưỡng",
+      "overweightObeseCount": "Thừa cân / Béo phì"
+    },
+    "bmiCategories": {
+      "UNDERWEIGHT": "Suy dinh dưỡng (Thiếu cân)",
+      "NORMAL": "Bình thường (Đạt chuẩn)",
+      "OVERWEIGHT": "Thừa cân (Nguy cơ)",
+      "OBESE": "Béo phì"
+    },
+    "table": {
+      "student": "Học sinh",
+      "class": "Lớp",
+      "measuredAt": "Ngày đo",
+      "height": "Chiều cao",
+      "weight": "Cân nặng",
+      "bmi": "BMI",
+      "whoStatus": "Đánh giá WHO",
+      "notes": "Ghi chú",
+      "actions": "Thao tác"
+    },
+    "form": {
+      "title": "Ghi nhận chỉ số sức khỏe",
+      "selectStudent": "Chọn học sinh",
+      "selectStudentPlaceholder": "-- Chọn học sinh cần đo --",
+      "measuredDate": "Ngày đo",
+      "heightCm": "Chiều cao (cm)",
+      "heightPlaceholder": "Ví dụ: 98.5",
+      "weightKg": "Cân nặng (kg)",
+      "weightPlaceholder": "Ví dụ: 14.2",
+      "notes": "Ghi chú sức khỏe / lưu ý y tế",
+      "notesPlaceholder": "Ví dụ: Đang mọc răng, ăn uống tốt, cần bổ sung canxi...",
+      "liveBmiPreview": "Dự kiến chỉ số:",
+      "whoStandard": "Chuẩn WHO:",
+      "save": "Lưu chỉ số",
+      "saving": "Đang lưu...",
+      "cancel": "Hủy bỏ"
+    },
+    "empty": {
+      "title": "Chưa có bản ghi sức khỏe nào",
+      "description": "Bắt đầu ghi nhận chỉ số chiều cao, cân nặng định kỳ cho học sinh để theo dõi biểu đồ phát triển theo chuẩn WHO."
+    }
+  },
+  "nutrition": {
+    "title": "Dinh dưỡng, Thực đơn & Đi chợ",
+    "description": "Quản lý kho nguyên liệu, thư viện món ăn, lập thực đơn tuần/tháng và lập phiếu đi chợ cân đối ngân sách.",
+    "tabs": {
+      "menu": "Kế hoạch Thực đơn",
+      "ingredients": "Kho Nguyên liệu",
+      "foodItems": "Thư viện Món ăn",
+      "grocery": "Phiếu Đi chợ"
+    },
+    "mealSlots": {
+      "MORNING": "Bữa sáng",
+      "LUNCH_MAIN": "Trưa (Món mặn)",
+      "LUNCH_SOUP": "Trưa (Canh)",
+      "AFTERNOON": "Bữa xế"
+    },
+    "foodGroups": {
+      "MEAT": "Thịt",
+      "FISH": "Cá / Hải sản",
+      "VEGETABLE": "Rau củ",
+      "EGG": "Trứng",
+      "DAIRY": "Sữa & Chế phẩm",
+      "GRAIN": "Ngũ cốc / Tinh bột",
+      "OTHER": "Khác"
+    },
+    "groceryStatus": {
+      "DRAFT": "Bản nháp",
+      "PENDING_APPROVAL": "Chờ duyệt",
+      "APPROVED": "Đã duyệt",
+      "REJECTED": "Từ chối"
+    }
+  }
+}
