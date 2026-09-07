@@ -23,7 +23,27 @@ export type TenantContext = {
   claims?: JWTClaims;
 };
 
-export const base = new PrismaClient();
+// Fallback mappings for Vercel Postgres & Supabase integrations
+if (!process.env.DATABASE_URL) {
+  if (process.env.POSTGRES_PRISMA_URL) {
+    process.env.DATABASE_URL = process.env.POSTGRES_PRISMA_URL;
+  } else if (process.env.POSTGRES_URL) {
+    process.env.DATABASE_URL = process.env.POSTGRES_URL;
+  }
+}
+if (!process.env.DIRECT_URL && process.env.POSTGRES_URL_NON_POOLING) {
+  process.env.DIRECT_URL = process.env.POSTGRES_URL_NON_POOLING;
+}
+
+const globalForPrisma = globalThis as unknown as {
+  prismaBase: PrismaClient | undefined;
+};
+
+export const base = globalForPrisma.prismaBase ?? new PrismaClient();
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prismaBase = base;
+}
 
 export const prisma = base.$extends({
   query: {

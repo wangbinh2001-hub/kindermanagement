@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Button, Input } from "@km/ui";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,10 +12,6 @@ import {
 import { 
   School, 
   User, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  Lock, 
   CheckCircle2, 
   Copy, 
   Check, 
@@ -28,7 +23,6 @@ import {
 import { provisionSchoolAction } from "../../actions";
 
 export default function NewSchoolPage() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -80,13 +74,14 @@ export default function NewSchoolPage() {
 
   const handleCopyCredentials = () => {
     if (!createdResult) return;
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
     const text = `--- THÔNG TIN TÀI KHOẢN TRƯỜNG HỌC ---
 Tên trường: ${createdResult.name}
 Mã trường: ${createdResult.schoolCode}
 Tên đăng nhập: ${createdResult.initialUsername}
 Mật khẩu tạm: ${createdResult.initialPassword}
 Lưu ý: Bắt buộc đổi mật khẩu ở lần đăng nhập đầu tiên.
-Trang đăng nhập: http://localhost:3000/login`;
+Trang đăng nhập: ${origin}/login`;
 
     navigator.clipboard.writeText(text);
     setCopied(true);
