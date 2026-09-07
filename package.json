@@ -9,7 +9,8 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "test:tenancy": "pnpm --filter @km/web run test:tenancy"
+    "test:tenancy": "pnpm --filter @km/web run test:tenancy",
+    "postinstall": "pnpm --filter @km/db run build"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
