@@ -2,7 +2,10 @@ import fs from 'fs';
 import path from 'path';
 
 function findAndCopyEngine() {
-  const destDir = path.resolve('apps/web/.next/server');
+  let destDir = path.resolve('.next/server');
+  if (!fs.existsSync(destDir)) {
+    destDir = path.resolve('apps/web/.next/server');
+  }
   if (!fs.existsSync(destDir)) {
     return;
   }
@@ -10,8 +13,11 @@ function findAndCopyEngine() {
   // Look in node_modules for any query_engine binary
   const searchDirs = [
     path.resolve('node_modules/.pnpm'),
+    path.resolve('../../node_modules/.pnpm'),
     path.resolve('packages/db/node_modules'),
+    path.resolve('../../packages/db/node_modules'),
     path.resolve('apps/web/node_modules'),
+    path.resolve('node_modules'),
   ];
 
   for (const root of searchDirs) {
@@ -33,7 +39,7 @@ function findAndCopyEngine() {
             const destPath = path.join(destDir, entry.name);
             if (!fs.existsSync(destPath)) {
               fs.copyFileSync(fullPath, destPath);
-              console.log(`[build] Copied Prisma engine ${entry.name} to .next/server`);
+              console.log(`[build] Copied Prisma engine ${entry.name} to ${destDir}`);
             }
           }
         }
